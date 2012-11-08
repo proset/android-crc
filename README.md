@@ -13,7 +13,7 @@ If you want to build the project, you will need Eclipse, the Android SDK and And
 Installation
 ------------
 There are two main ways to install the application on your Android device:
-* Download the packaged `Android-CRC.apk` Android application and install it normally on your Android device (Remember to allow third party apps on your device's settings).
+* Download the packaged `Catchoom-CRC.apk` Android application and install it normally on your Android device (Remember to allow third party apps on your device's settings).
 * Download the Eclipse project `Android CRC`, open it on Eclipse and execute it as an Android project.
 
 Usage

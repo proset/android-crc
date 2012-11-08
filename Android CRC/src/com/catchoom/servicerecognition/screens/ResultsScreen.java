@@ -250,7 +250,7 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 						
 						if (null != url) {
 							// Little hack to prevent Uri parser to crash with malformed URLs
-							if (!url.startsWith("http://")) url = "http://" + url;
+							if (!url.matches("https?://")) url = "http://" + url;
 							
 							goToWeb.setData(Uri.parse(url));
 							startActivity(goToWeb);

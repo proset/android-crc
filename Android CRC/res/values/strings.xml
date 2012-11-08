@@ -37,7 +37,7 @@
     <string name="error_no_camera">Camera not available</string>
     <string name="error_external_storage">External storage unaccessible</string>
     
-    <string name="processing">Processing you request…</string>
+    <string name="processing">Processing your request…</string>
     
     <string name="label_results_found">{0,choice,0#There is no object in the collection that matches your request.|1#1 result has been found|1&lt;{0} results have been found}</string>
     <string name="score">Score: %1d</string>
