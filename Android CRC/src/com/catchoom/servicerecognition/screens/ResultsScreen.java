@@ -23,8 +23,8 @@ import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,8 +33,8 @@ import com.catchoom.api.CatchoomResponseHandler;
 import com.catchoom.api.CatchoomSearchResponseItem;
 import com.catchoom.servicerecognition.CatchoomApplication;
 import com.catchoom.servicerecognition.R;
-import com.catchoom.servicerecognition.item.ImageManager;
 import com.catchoom.servicerecognition.item.ItemsAdapter;
+import com.catchoom.servicerecognition.util.ImageManager;
 import com.catchoom.servicerecognition.util.ImageUtil;
 
 public class ResultsScreen extends Activity implements OnClickListener, CatchoomResponseHandler {
@@ -47,6 +47,8 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	
 	private ImageManager mImageManager = null;
 	private ProgressDialog mProgressDialog = null;
+	private ArrayList<CatchoomSearchResponseItem> mItems = null;
+	private ItemsAdapter mAdapter = null;
 	
 	public ResultsScreen() {
 		
@@ -55,10 +57,7 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 			token = CatchoomApplication.preferences.getString(CatchoomApplication.PREFS_COLLECTION_TOKEN_KEY, "");
 		}
 		
-		mImageManager = new ImageManager();
-		
 		File outputPicture = ImageUtil.getOutputPicture();
-		
 		if (null != outputPicture) {
 			pictureUri = Uri.fromFile(outputPicture);
 		}
@@ -70,6 +69,23 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
     public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.results);
+		
+		mAdapter = new ItemsAdapter(ResultsScreen.this);
+		
+		// Check for the integrity of our UI objects
+		final ArrayList<Object> savedData = (ArrayList<Object>) getLastNonConfigurationInstance();
+		if (null != savedData) {
+			mImageManager = (ImageManager) savedData.get(0);
+			mItems = (ArrayList<CatchoomSearchResponseItem>) savedData.get(1);
+			if (null != mItems) {
+				Log.d(CatchoomApplication.APP_LOG_TAG, "Items not null");
+				updateContent(mItems);
+			}
+		} else {
+			mImageManager = new ImageManager();
+		}
+		
+		mAdapter.setImageManager(mImageManager);
 		
 		// Check for the integrity of our collection settings
 		if (null != savedInstanceState && savedInstanceState.containsKey("collectionToken")) {
@@ -192,9 +208,7 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	
 	@Override
 	public void requestCompletedResponse(int requestCode, Object responseData) {
-		
 		dismissProgressDialog();
-		
 		updateContent((ArrayList<CatchoomSearchResponseItem>) responseData);
 	}
 
@@ -219,14 +233,12 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 				Toast.makeText(ResultsScreen.this, getString(R.string.error_request), Toast.LENGTH_SHORT).show();
 			}
 		}
-		
 	}
 	
 	private void updateContent(ArrayList<CatchoomSearchResponseItem> items) {
-		
 		LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-		View newContent = inflater.inflate(R.layout.results_content, null);
-		ScrollView resultsContainer = (ScrollView) findViewById(R.id.resultsContainer);
+		LinearLayout newContent = (LinearLayout) inflater.inflate(R.layout.results_content, null);
+		LinearLayout resultsContainer = (LinearLayout) findViewById(R.id.resultsContainer);
 		
 		if (null == newContent) {
 			// Error inflating newView
@@ -236,17 +248,16 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 			TextView resultsFound = (TextView) newContent.findViewById(R.id.resultsFound);
 			resultsFound.setText(MessageFormat.format(getString(R.string.label_results_found), items.size()));
 			
-			final ItemsAdapter adapter = new ItemsAdapter(ResultsScreen.this, items);
-			adapter.setImageManager(mImageManager);
+			mAdapter.setItems(items);
 			
 			ListView resultsList = (ListView) newContent.findViewById(R.id.resultsList);
-			resultsList.setAdapter(adapter);
+			resultsList.setAdapter(mAdapter);
 			resultsList.setOnItemClickListener(new OnItemClickListener() {
 
 				@Override
 				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 						Intent goToWeb = new Intent(Intent.ACTION_VIEW);
-						String url = adapter.getItem(position).getMetadata().getString("url");
+						String url = mAdapter.getItem(position).getMetadata().getString("url");
 						
 						if (null != url) {
 							// Little hack to prevent Uri parser to crash with malformed URLs
@@ -261,10 +272,12 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 			resultsContainer.removeAllViewsInLayout();
 			resultsContainer.addView(newContent);
 		}
+		
+		mItems = items;
 	}
 	
 	private void dismissProgressDialog() {
-		if (null != mProgressDialog) {
+		if (null != mProgressDialog && mProgressDialog.isShowing()) {
 			mProgressDialog.dismiss();
 			mProgressDialog = null;
 		}
@@ -289,5 +302,13 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putString("collectionToken", token);
+	}
+	
+	@Override
+	public Object onRetainNonConfigurationInstance() {
+	    final ArrayList<Object> data = new ArrayList<Object>();
+	    data.add(mImageManager);
+	    data.add(mItems);
+	    return data;
 	}
 }
