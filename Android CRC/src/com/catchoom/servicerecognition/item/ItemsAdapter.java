@@ -16,6 +16,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.catchoom.api.CatchoomSearchResponseItem;
+import com.catchoom.servicerecognition.CatchoomApplication;
 import com.catchoom.servicerecognition.R;
 import com.catchoom.servicerecognition.util.ImageManager;
 
@@ -23,7 +24,6 @@ public class ItemsAdapter extends BaseAdapter {
 
 	private Context mContext = null;
 	private ArrayList<CatchoomSearchResponseItem> mItems = null;
-	private ImageManager mImageManager = null;
 	
 	public ItemsAdapter(Context context) {
 		mContext = context;
@@ -32,10 +32,6 @@ public class ItemsAdapter extends BaseAdapter {
 	public ItemsAdapter(Context context, ArrayList<CatchoomSearchResponseItem> items) {
 		mContext = context;
 		this.mItems = items;
-	}
-	
-	public void setImageManager(ImageManager manager) {
-		mImageManager = manager;
 	}
 	
 	public void setItems(ArrayList<CatchoomSearchResponseItem> items) {
@@ -84,8 +80,8 @@ public class ItemsAdapter extends BaseAdapter {
 			String name = metadata.getString("name");
 			String thumbnailUrl = metadata.getString("thumbnail");
 			
-			if (null != thumbnailUrl && null != mImageManager) {
-				mImageManager.loadImageInView(thumbnailUrl, viewport);
+			if (null != thumbnailUrl && null != CatchoomApplication.imageManager) {
+				CatchoomApplication.imageManager.loadImageInView(thumbnailUrl, viewport);
 			}
 			
 			if (null == name) {

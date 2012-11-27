@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.catchoom.api.Catchoom;
+import com.catchoom.servicerecognition.util.ImageManager;
 
 public class CatchoomApplication extends Application {
 
@@ -27,6 +28,7 @@ public class CatchoomApplication extends Application {
 	
 	public static SharedPreferences preferences = null;
 	public static Catchoom catchoom = null;
+	public static ImageManager imageManager = null;
 	public static Context context = null;
 	
 	@Override
@@ -38,6 +40,7 @@ public class CatchoomApplication extends Application {
 		HttpParams httpParams = new BasicHttpParams();
         httpParams.setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
 		CatchoomApplication.catchoom = new Catchoom();
+		imageManager = new ImageManager();
 		context = getApplicationContext();
 	}
 }

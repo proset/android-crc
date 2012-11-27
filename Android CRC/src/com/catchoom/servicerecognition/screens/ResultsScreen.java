@@ -34,7 +34,6 @@ import com.catchoom.api.CatchoomSearchResponseItem;
 import com.catchoom.servicerecognition.CatchoomApplication;
 import com.catchoom.servicerecognition.R;
 import com.catchoom.servicerecognition.item.ItemsAdapter;
-import com.catchoom.servicerecognition.util.ImageManager;
 import com.catchoom.servicerecognition.util.ImageUtil;
 
 public class ResultsScreen extends Activity implements OnClickListener, CatchoomResponseHandler {
@@ -45,7 +44,6 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	private Uri pictureUri = null;
 	private String token = null;
 	
-	private ImageManager mImageManager = null;
 	private ProgressDialog mProgressDialog = null;
 	private ArrayList<CatchoomSearchResponseItem> mItems = null;
 	private ItemsAdapter mAdapter = null;
@@ -75,17 +73,17 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 		// Check for the integrity of our UI objects
 		final ArrayList<Object> savedData = (ArrayList<Object>) getLastNonConfigurationInstance();
 		if (null != savedData) {
-			mImageManager = (ImageManager) savedData.get(0);
-			mItems = (ArrayList<CatchoomSearchResponseItem>) savedData.get(1);
+			mItems = (ArrayList<CatchoomSearchResponseItem>) savedData.get(0);
 			if (null != mItems) {
 				Log.d(CatchoomApplication.APP_LOG_TAG, "Items not null");
 				updateContent(mItems);
 			}
-		} else {
-			mImageManager = new ImageManager();
+			
+			boolean progressDialogWasShowing = (Boolean) savedData.get(1);
+			if (progressDialogWasShowing) {
+				mProgressDialog = ProgressDialog.show(ResultsScreen.this, null, getString(R.string.processing));
+			}
 		}
-		
-		mAdapter.setImageManager(mImageManager);
 		
 		// Check for the integrity of our collection settings
 		if (null != savedInstanceState && savedInstanceState.containsKey("collectionToken")) {
@@ -306,9 +304,19 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	
 	@Override
 	public Object onRetainNonConfigurationInstance() {
+		super.onRetainNonConfigurationInstance();
+		boolean isDialogShowing = null != mProgressDialog && mProgressDialog.isShowing();
 	    final ArrayList<Object> data = new ArrayList<Object>();
-	    data.add(mImageManager);
+	    
 	    data.add(mItems);
+	    data.add(isDialogShowing);
+	    
 	    return data;
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		dismissProgressDialog();
 	}
 }
