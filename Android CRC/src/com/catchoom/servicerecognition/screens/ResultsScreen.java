@@ -28,6 +28,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.catchoom.api.Catchoom;
 import com.catchoom.api.CatchoomErrorResponseItem;
 import com.catchoom.api.CatchoomResponseHandler;
 import com.catchoom.api.CatchoomSearchResponseItem;
@@ -59,8 +60,6 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 		if (null != outputPicture) {
 			pictureUri = Uri.fromFile(outputPicture);
 		}
-		
-		CatchoomApplication.catchoom.setResponseHandler(this);
 	}
 	
 	@Override
@@ -120,7 +119,13 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 		ImageButton galleryButton = (ImageButton) findViewById(R.id.galleryButton);
 		galleryButton.setOnClickListener(this);
 	}
-
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
+		CatchoomApplication.catchoom.setResponseHandler(this);
+	}
+	
 	@Override
 	public void onClick(View v) {
 		
@@ -207,7 +212,9 @@ public class ResultsScreen extends Activity implements OnClickListener, Catchoom
 	@Override
 	public void requestCompletedResponse(int requestCode, Object responseData) {
 		dismissProgressDialog();
-		updateContent((ArrayList<CatchoomSearchResponseItem>) responseData);
+		if (Catchoom.Request.SEARCH_REQUEST == requestCode) {
+			updateContent((ArrayList<CatchoomSearchResponseItem>) responseData);
+		}
 	}
 
 	@Override

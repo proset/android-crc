@@ -22,6 +22,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.catchoom.api.Catchoom;
 import com.catchoom.api.CatchoomErrorResponseItem;
 import com.catchoom.api.CatchoomResponseHandler;
 import com.catchoom.servicerecognition.CatchoomApplication;
@@ -50,7 +51,11 @@ public class SettingsScreen extends Activity implements OnClickListener, TextWat
 		if (null != CatchoomApplication.preferences) {
 			collectionTokenEdit.setText(CatchoomApplication.preferences.getString(CatchoomApplication.PREFS_COLLECTION_TOKEN_KEY, ""));
 		}
-		
+	}
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
 		CatchoomApplication.catchoom.setResponseHandler(this);
 	}
 
@@ -88,24 +93,24 @@ public class SettingsScreen extends Activity implements OnClickListener, TextWat
 
 	@Override
 	public void requestCompletedResponse(int requestCode, Object responseData) {
-		
 		dismissProgressDialog();
-		
-		Log.d(CatchoomApplication.APP_LOG_TAG, "Collection valid with timestamp " + responseData.toString());
-		
-		CheckBox remember = (CheckBox) findViewById(R.id.remember);
-		
-		if (remember.isChecked() && null != CatchoomApplication.preferences) {
-			// Save collection settings
-			Editor editor = CatchoomApplication.preferences.edit();
-			editor.putString(CatchoomApplication.PREFS_COLLECTION_TOKEN_KEY, collectionTokenEdit.getText().toString());
-			editor.commit();
+		if (Catchoom.Request.CONNECT_REQUEST == requestCode) {
+			Log.d(CatchoomApplication.APP_LOG_TAG, "Collection valid with timestamp " + responseData.toString());
+			
+			CheckBox remember = (CheckBox) findViewById(R.id.remember);
+			
+			if (remember.isChecked() && null != CatchoomApplication.preferences) {
+				// Save collection settings
+				Editor editor = CatchoomApplication.preferences.edit();
+				editor.putString(CatchoomApplication.PREFS_COLLECTION_TOKEN_KEY, collectionTokenEdit.getText().toString());
+				editor.commit();
+			}
+			
+			// Go to results screen
+			Intent intent = new Intent(SettingsScreen.this, ResultsScreen.class);
+			intent.putExtra("collectionToken", collectionTokenEdit.getText().toString());
+			startActivity(intent);
 		}
-		
-		// Go to results screen
-		Intent intent = new Intent(SettingsScreen.this, ResultsScreen.class);
-		intent.putExtra("collectionToken", collectionTokenEdit.getText().toString());
-		startActivity(intent);
 	}
 
 	@Override
