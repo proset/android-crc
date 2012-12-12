@@ -6,13 +6,14 @@ package com.catchoom.servicerecognition.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -22,26 +23,48 @@ import android.util.Pair;
 import android.widget.ImageView;
 
 import com.catchoom.servicerecognition.CatchoomApplication;
+import com.catchoom.servicerecognition.R;
 
 public class ImageManager extends Handler {
 
-	private final SoftReference<HashMap<String, Drawable>> imagesMap;
+	private static final int MAX_EXECUTOR_THREADS = 5;
+	private final HashMap<String, Drawable> imagesMap;
+	private final ExecutorService executor;
+	private WeakHashMap<ImageView, Future<LoadImageInView>> loadImageQueue;
 	
 	public ImageManager() {
-        imagesMap = new SoftReference<HashMap<String, Drawable>>(new HashMap<String, Drawable>());
-    }
+		imagesMap = new HashMap<String, Drawable>();
+		executor = Executors.newFixedThreadPool(MAX_EXECUTOR_THREADS);
+		loadImageQueue = new WeakHashMap<ImageView, Future<LoadImageInView>>();
+	}
 
-    public Drawable getDrawableFromURL(String url) {
-        if (imagesMap.get().containsKey(url)) {
-            return imagesMap.get().get(url);
+	public void loadImageInView(final String urlString, final ImageView imageView) {
+        if (imagesMap.containsKey(urlString)) {
+            imageView.setImageDrawable(imagesMap.get(urlString));
+        } else {
+        	imageView.setImageResource(R.drawable.viewport);
+        	if (loadImageQueue.containsKey(imageView)) {
+        		Future<LoadImageInView> f = loadImageQueue.get(imageView);
+        		f.cancel(true);
+        		loadImageQueue.remove(imageView);
+        	}
+    		
+        	Future<LoadImageInView> f = (Future<LoadImageInView>) executor.submit(new LoadImageInView(imageView, urlString));
+    		loadImageQueue.put(imageView, f);
+        }
+    }
+	
+	private Drawable getDrawableFromURL(String url) {
+        if (imagesMap.containsKey(url)) {
+            return imagesMap.get(url);
         }
 
         try {
-            InputStream is = downloadImage(url);
+        	InputStream is = (InputStream) new URL(url).getContent();
             Drawable drawable = Drawable.createFromStream(is, url);
 
             if (drawable != null) {
-            	imagesMap.get().put(url, drawable);
+            	imagesMap.put(url, drawable);
             } else {
             	Log.e(CatchoomApplication.APP_LOG_TAG, "Error downloading thumbnail from " + url);
             }
@@ -55,35 +78,34 @@ public class ImageManager extends Handler {
         
         return null;
     }
-
-   public void loadImageInView(final String urlString, final ImageView imageView) {
-        if (imagesMap.get().containsKey(urlString)) {
-            imageView.setImageDrawable(imagesMap.get().get(urlString));
-        } else {
-	        Thread thread = new Thread() {
-	            @Override
-	            public void run() {
-	                Drawable drawable = getDrawableFromURL(urlString);
-	                Pair<ImageView, Drawable> imageData = new Pair<ImageView, Drawable>(imageView, drawable);
-	                Message message = obtainMessage(1, imageData);
-	                sendMessage(message);
-	            }
-	        };
-	        thread.start();
-        }
-    }
-
-    private InputStream downloadImage(String urlString) throws MalformedURLException, IOException {
-        DefaultHttpClient httpClient = new DefaultHttpClient();
-        HttpGet request = new HttpGet(urlString);
-        HttpResponse response = httpClient.execute(request);
-        return response.getEntity().getContent();
-    }
 	
     @Override
 	public void handleMessage(Message message) {
     	Pair<ImageView, Drawable> imageData = (Pair<ImageView, Drawable>) message.obj;
-    	ImageView placeHolder = imageData.first;
-    	placeHolder.setImageDrawable(imageData.second);
+    	if (null != imageData) {
+    		ImageView placeHolder = imageData.first;
+    		placeHolder.setImageDrawable(imageData.second);
+    		loadImageQueue.remove(imageData.first);
+    	}
+    }
+    
+    private class LoadImageInView implements Runnable {
+    	
+    	private WeakReference<ImageView> mImageViewReference;
+    	private String mImageUrl;
+    	
+    	public LoadImageInView(ImageView imageView, String imageUrl) {
+    		mImageViewReference = new WeakReference<ImageView>(imageView);
+    		mImageUrl = imageUrl;
+    	}
+
+		@Override
+		public void run() {
+			Drawable drawable = getDrawableFromURL(mImageUrl);
+            Pair<ImageView, Drawable> imageData = new Pair<ImageView, Drawable>(mImageViewReference.get(), drawable);
+            Message message = obtainMessage(1, imageData);
+            sendMessage(message);
+		}
+    	
     }
 }

@@ -18,7 +18,6 @@ import android.widget.TextView;
 import com.catchoom.api.CatchoomSearchResponseItem;
 import com.catchoom.servicerecognition.CatchoomApplication;
 import com.catchoom.servicerecognition.R;
-import com.catchoom.servicerecognition.util.ImageManager;
 
 public class ItemsAdapter extends BaseAdapter {
 
