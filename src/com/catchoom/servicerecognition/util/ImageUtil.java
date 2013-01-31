@@ -1,4 +1,4 @@
-// © Catchoom Technologies S.L.
+// (c) Catchoom Technologies S.L.
 // Licensed under the MIT license.
 // https://raw.github.com/catchoom/android-crc/master/LICENSE
 // All warranties and liabilities are disclaimed.
